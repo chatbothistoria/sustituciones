@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tablón de sustituciones</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,400..600,0..100,0..1&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<style>
+:root {
+  --ink: #1A2421;
+  --ink-2: #2C3A35;
+  --paper: #F7F3EC;
+  --paper-2: #FFFFFF;
+  --paper-3: #EFE9DD;
+  --rule: #D9D2C5;
+  --rule-strong: #B8AE9B;
+  --muted: #6B6557;
+  --muted-2: #8E8675;
+  --accent: #C0613A;
+  --accent-soft: #F2D6BC;
+  --accent-tint: #FBEEE0;
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 14px;
+  --r-xl: 20px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; scroll-padding-top: 80px; }
+html, body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  background-image:
+    radial-gradient(circle at 15% 0%, rgba(192,97,58,.06) 0, transparent 35%),
+    radial-gradient(circle at 95% 60%, rgba(74,124,89,.04) 0, transparent 40%);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+.serif { font-family: 'Fraunces', Georgia, serif; }
+
+.wrap {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 22px 80px;
+}
+
+/* ========= MASTHEAD ========= */
+.masthead {
+  text-align: left;
+  padding: 18px 4px 24px;
+  border-bottom: 1px solid var(--rule);
+  margin-bottom: 24px;
+}
+.eyebrow {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: .18em;
+  color: var(--muted);
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+.center-name {
+  font-family: 'Fraunces', serif;
+  font-weight: 500;
+  font-size: 14px;
+  font-variation-settings: "opsz" 14;
+  color: var(--ink-2);
+  letter-spacing: .02em;
+  margin-bottom: 4px;
+}
+.masthead-title {
+  font-family: 'Fraunces', serif;
+  font-weight: 400;
+  font-size: clamp(34px, 7vw, 44px);
+  line-height: 1.05;
+  font-variation-settings: "opsz" 144, "SOFT" 30;
+  letter-spacing: -.02em;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.masthead-sub {
+  color: var(--muted);
+  font-size: 13.5px;
+  letter-spacing: .01em;
+}
+.masthead-sub span.dot { display: inline-block; width: 3px; height: 3px; border-radius: 50%; background: var(--rule-strong); vertical-align: middle; margin: 0 8px; }
+
+/* ========= STICKY DAY NAV ========= */
+.day-nav-shell {
+  position: sticky;
+  top: 0;
+  background: rgba(247, 243, 236, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 20;
+  margin: 0 -22px 28px;
+  padding: 12px 22px;
+  border-bottom: 1px solid var(--rule);
+}
+.day-nav {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  max-width: 640px;
+  margin: 0 auto;
+}
+.day-nav a {
+  text-decoration: none;
+  color: var(--ink-2);
+  text-align: center;
+  padding: 8px 4px 9px;
+  border-radius: var(--r-sm);
+  font-size: 13px;
+  font-weight: 500;
+  transition: background .15s, color .15s;
+  font-variant-numeric: tabular-nums;
+  position: relative;
+}
+.day-nav a:hover { background: var(--paper-3); }
+.day-nav a.is-current {
+  background: var(--ink);
+  color: var(--paper);
+}
+.day-nav a.has-content::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  right: 50%;
+  transform: translateX(8px);
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.day-nav a.is-current.has-content::after { background: var(--accent-soft); }
+.day-nav-name {
+  display: block;
+  font-family: 'Fraunces', serif;
+  font-weight: 500;
+  font-variation-settings: "opsz" 14;
+  font-size: 14px;
+  text-transform: capitalize;
+  line-height: 1.1;
+}
+.day-nav-date {
+  display: block;
+  font-size: 10.5px;
+  margin-top: 2px;
+  opacity: .55;
+  letter-spacing: .04em;
+  font-variant-numeric: tabular-nums;
+}
+.day-nav a.is-current .day-nav-date { opacity: .75; }
+
+/* ========= DAY SECTION ========= */
+.day {
+  margin-bottom: 48px;
+  scroll-margin-top: 90px;
+}
+.day:last-child { margin-bottom: 0; }
+
+.day-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--rule);
+}
+.day-header-left { min-width: 0; }
+.day-name {
+  font-family: 'Fraunces', serif;
+  font-weight: 400;
+  font-size: 38px;
+  line-height: 1;
+  font-variation-settings: "opsz" 144, "SOFT" 50;
+  letter-spacing: -.02em;
+  text-transform: capitalize;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.day-date {
+  color: var(--muted);
+  font-size: 13.5px;
+  letter-spacing: .015em;
+}
+.day-count {
+  font-family: 'Fraunces', serif;
+  font-weight: 400;
+  font-size: 13px;
+  color: var(--muted);
+  font-variation-settings: "opsz" 14;
+  text-align: right;
+  padding-bottom: 4px;
+}
+.day-count strong {
+  display: block;
+  font-size: 30px;
+  line-height: 1;
+  color: var(--ink);
+  font-variation-settings: "opsz" 144;
+  margin-bottom: 2px;
+  letter-spacing: -.02em;
+}
+
+/* ========= SUB CARDS ========= */
+.subs { display: flex; flex-direction: column; gap: 10px; }
+
+.sub {
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-lg);
+  padding: 14px 16px 14px 18px;
+  display: grid;
+  grid-template-columns: 56px 1fr;
+  gap: 14px;
+  align-items: start;
+  position: relative;
+  transition: border-color .2s, transform .2s;
+}
+.sub::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 14px;
+  bottom: 14px;
+  width: 3px;
+  background: var(--accent);
+  border-radius: 0 2px 2px 0;
+}
+.sub:hover {
+  border-color: var(--rule-strong);
+}
+
+.sub-hour {
+  text-align: center;
+  padding-top: 3px;
+}
+.sub-hour-num {
+  font-family: 'Fraunces', serif;
+  font-weight: 400;
+  font-size: 30px;
+  line-height: 1;
+  font-variation-settings: "opsz" 144;
+  letter-spacing: -.025em;
+  color: var(--ink);
+}
+.sub-hour-label {
+  font-size: 9.5px;
+  text-transform: uppercase;
+  letter-spacing: .16em;
+  color: var(--muted);
+  margin-top: 5px;
+  font-weight: 500;
+}
+
+.sub-body { min-width: 0; padding-top: 1px; }
+.sub-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.sub-subject {
+  font-weight: 600;
+  font-size: 15.5px;
+  letter-spacing: -.005em;
+}
+.tag {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 100px;
+  background: var(--paper-3);
+  color: var(--ink-2);
+  font-weight: 500;
+  white-space: nowrap;
+}
+.tag.room { background: var(--accent-tint); color: var(--accent); }
+
+.sub-people {
+  font-size: 14.5px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin-top: 2px;
+}
+.sub-absent {
+  color: var(--muted);
+  text-decoration: line-through;
+  text-decoration-color: var(--rule-strong);
+  text-decoration-thickness: 1px;
+}
+.sub-arrow { color: var(--muted-2); font-family: 'Fraunces', serif; }
+.sub-sub { font-weight: 600; color: var(--ink); }
+
+.sub-notes {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--rule);
+  font-style: italic;
+  line-height: 1.5;
+}
+
+/* ========= EMPTY STATE PER DAY ========= */
+.day-empty {
+  background: var(--paper-2);
+  border: 1px dashed var(--rule-strong);
+  border-radius: var(--r-lg);
+  padding: 26px 22px;
+  text-align: center;
+}
+.day-empty-mark {
+  font-family: 'Fraunces', serif;
+  font-weight: 400;
+  font-size: 44px;
+  line-height: 1;
+  font-variation-settings: "opsz" 144, "WONK" 1;
+  color: var(--rule-strong);
+  margin-bottom: 8px;
+  letter-spacing: -.04em;
+}
+.day-empty-text {
+  font-family: 'Fraunces', serif;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 1.45;
+  font-variation-settings: "opsz" 30;
+  color: var(--muted);
+  letter-spacing: .005em;
+  max-width: 30ch;
+  margin: 0 auto;
+}
+
+/* ========= LOADING / ERROR ========= */
+.loading-state {
+  text-align: center;
+  padding: 80px 20px;
+  color: var(--muted);
+}
+.loading-state .spinner {
+  width: 24px; height: 24px;
+  margin: 0 auto 12px;
+  border: 2px solid var(--rule);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ========= FOOTER ========= */
+footer {
+  margin-top: 56px;
+  padding-top: 22px;
+  border-top: 1px solid var(--rule);
+  text-align: center;
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: .02em;
+}
+footer .last-updated {
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+footer .heart {
+  display: block;
+  font-family: 'Fraunces', serif;
+  font-size: 14px;
+  margin-top: 6px;
+  color: var(--rule-strong);
+}
+
+@media (max-width: 480px) {
+  .wrap { padding: 20px 16px 64px; }
+  .day-nav-shell { margin: 0 -16px 24px; padding: 10px 16px; }
+  .day-name { font-size: 30px; }
+  .day-count strong { font-size: 24px; }
+  .sub { grid-template-columns: 46px 1fr; padding: 12px 14px 12px 16px; gap: 10px; }
+  .sub-hour-num { font-size: 24px; }
+  .sub-subject { font-size: 15px; }
+  .sub-people { font-size: 14px; }
+  .day-nav-name { font-size: 13px; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <header class="masthead">
+    <div class="eyebrow">Tablón del claustro</div>
+    <div class="center-name" id="centerName"></div>
+    <h1 class="masthead-title serif">Sustituciones de la semana</h1>
+    <p class="masthead-sub">
+      <span>Actualizado en tiempo real</span>
+      <span class="dot"></span>
+      <span class="last-updated" id="lastUpdated">—</span>
+    </p>
+  </header>
+
+  <nav class="day-nav-shell" aria-label="Navegación por día">
+    <div class="day-nav" id="dayNav"></div>
+  </nav>
+
+  <div id="content">
+    <div class="loading-state">
+      <div class="spinner"></div>
+      Cargando…
+    </div>
+  </div>
+
+  <footer>
+    <span>Tablón de sustituciones</span>
+    <span class="heart">·</span>
+  </footer>
+
+</div>
+
+<script>
+// ============================================================
+// Firebase config — la misma del usuario
+// ============================================================
+const firebaseConfig = {
+  apiKey: "AIzaSyCCRTbv102n00--vww-yWxbyFUsnxflfAs",
+  authDomain: "sustituciones-a2e3b.firebaseapp.com",
+  databaseURL: "https://sustituciones-a2e3b-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "sustituciones-a2e3b",
+  storageBucket: "sustituciones-a2e3b.firebasestorage.app",
+  messagingSenderId: "401477983019",
+  appId: "1:401477983019:web:95a4a7bc5417672e48836e"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ============================================================
+// Constants
+// ============================================================
+const DAYS = ['lunes','martes','miercoles','jueves','viernes'];
+const DAY_LABEL = {
+  lunes: 'Lunes', martes: 'Martes', miercoles: 'Miércoles',
+  jueves: 'Jueves', viernes: 'Viernes'
+};
+const DAY_SHORT = {
+  lunes: 'Lun', martes: 'Mar', miercoles: 'Mié',
+  jueves: 'Jue', viernes: 'Vie'
+};
+const DAY_DOW = { lunes:1, martes:2, miercoles:3, jueves:4, viernes:5 };
+
+// ============================================================
+// State
+// ============================================================
+let subsByKey = {};          // raw
+let weekDates = {};          // { lunes: '2026-05-25', ... }
+let centerName = '';
+
+// ============================================================
+// Helpers
+// ============================================================
+function escapeHtml(s) {
+  if (s === undefined || s === null) return '';
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function normalizeDay(d) {
+  if (!d) return null;
+  const k = d.toString().toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  return DAYS.includes(k) ? k : null;
+}
+
+function nextDateForDow(targetDow) {
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const todayDow = today.getDay();
+  let diff = (targetDow - todayDow + 7) % 7;
+  const d = new Date(today);
+  d.setDate(d.getDate() + diff);
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0,10);
+}
+
+function formatDateLong(iso) {
+  if (!iso) return '';
+  const d = new Date(iso + 'T00:00:00');
+  return d.toLocaleDateString('es-ES', {
+    day: 'numeric', month: 'long', year: 'numeric'
+  });
+}
+function formatDateShort(iso) {
+  if (!iso) return '';
+  const d = new Date(iso + 'T00:00:00');
+  return d.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+}
+
+function getCurrentDayKey() {
+  const dow = new Date().getDay(); // 0..6
+  if (dow === 0 || dow === 6) return 'lunes'; // weekends → lunes
+  return DAYS[dow - 1];
+}
+
+// ============================================================
+// Render
+// ============================================================
+function render() {
+  // Sort subs into days
+  const byDay = { lunes:[], martes:[], miercoles:[], jueves:[], viernes:[] };
+  Object.entries(subsByKey).forEach(([key, sub]) => {
+    const day = normalizeDay(sub.dia);
+    if (!day) return;
+    byDay[day].push({ key, ...sub });
+  });
+  // Sort each day by hour
+  DAYS.forEach(d => {
+    byDay[d].sort((a,b) => {
+      const ah = parseInt(String(a.hora).replace(/[^\d]/g,''),10) || 99;
+      const bh = parseInt(String(b.hora).replace(/[^\d]/g,''),10) || 99;
+      return ah - bh;
+    });
+  });
+
+  renderNav(byDay);
+  renderContent(byDay);
+  updateLastUpdated();
+  highlightCurrentDayInNav();
+}
+
+function renderNav(byDay) {
+  const nav = document.getElementById('dayNav');
+  const currentKey = getCurrentDayKey();
+  nav.innerHTML = DAYS.map(d => {
+    const has = byDay[d].length > 0;
+    const date = weekDates[d];
+    const dateLbl = date ? formatDateShort(date) : '';
+    return `
+      <a href="#${d}" data-day="${d}"
+         class="${d === currentKey ? 'is-current' : ''} ${has ? 'has-content' : ''}">
+        <span class="day-nav-name">${DAY_SHORT[d]}</span>
+        <span class="day-nav-date">${dateLbl}</span>
+      </a>`;
+  }).join('');
+}
+
+function renderContent(byDay) {
+  const root = document.getElementById('content');
+  root.innerHTML = DAYS.map(d => {
+    const subs = byDay[d];
+    const fallbackDate = nextDateForDow(DAY_DOW[d]);
+    const dateIso = weekDates[d] || fallbackDate;
+    const dateLong = formatDateLong(dateIso);
+
+    const inner = subs.length === 0
+      ? `<div class="day-empty">
+           <div class="day-empty-mark serif">·</div>
+           <p class="day-empty-text serif">Todavía no hemos publicado las sustituciones de este día.</p>
+         </div>`
+      : `<div class="subs">${subs.map(renderSub).join('')}</div>`;
+
+    return `
+      <section class="day" id="${d}">
+        <div class="day-header">
+          <div class="day-header-left">
+            <h2 class="day-name serif">${DAY_LABEL[d]}</h2>
+            <div class="day-date">${dateLong}</div>
+          </div>
+          ${subs.length > 0
+            ? `<div class="day-count"><strong class="serif">${subs.length}</strong>${subs.length === 1 ? 'sustitución' : 'sustituciones'}</div>`
+            : ''}
+        </div>
+        ${inner}
+      </section>`;
+  }).join('');
+}
+
+function renderSub(s) {
+  const hour = parseInt(String(s.hora).replace(/[^\d]/g,''),10) || s.hora;
+  const subject = s.asignatura || s.materia || '';
+  const grade = s.grupo || s.curso || '';
+  // Backwards compat: accept old "ausente" string OR new "ausenteNombre"
+  const absent = s.ausenteNombre || s.ausente || '—';
+  const sub = s.sustitutoNombre || s.sustituto || '—';
+  const notes = s.notas || '';
+
+  const tags = [];
+  if (grade) tags.push(`<span class="tag">${escapeHtml(grade)}</span>`);
+
+  return `
+    <article class="sub">
+      <div class="sub-hour">
+        <div class="sub-hour-num">${escapeHtml(hour)}${typeof hour === 'number' ? 'ª' : ''}</div>
+        <div class="sub-hour-label">hora</div>
+      </div>
+      <div class="sub-body">
+        <div class="sub-head">
+          ${subject ? `<span class="sub-subject">${escapeHtml(subject)}</span>` : ''}
+          ${tags.join('')}
+        </div>
+        <div class="sub-people">
+          <span class="sub-absent">${escapeHtml(absent)}</span>
+          <span class="sub-arrow">→</span>
+          <span class="sub-sub">${escapeHtml(sub)}</span>
+        </div>
+        ${notes ? `<div class="sub-notes">${escapeHtml(notes)}</div>` : ''}
+      </div>
+    </article>`;
+}
+
+function updateLastUpdated() {
+  const el = document.getElementById('lastUpdated');
+  const now = new Date();
+  el.textContent = now.toLocaleString('es-ES', {
+    day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+  });
+}
+
+function highlightCurrentDayInNav() {
+  const hash = window.location.hash.replace('#','');
+  if (!hash) return;
+  const navLinks = document.querySelectorAll('.day-nav a');
+  navLinks.forEach(a => a.classList.remove('is-current'));
+  const match = document.querySelector(`.day-nav a[data-day="${hash}"]`);
+  if (match) match.classList.add('is-current');
+}
+
+// ============================================================
+// Listeners
+// ============================================================
+db.ref('sustituciones').on('value', snap => {
+  subsByKey = snap.val() || {};
+  render();
+}, err => {
+  console.error('Firebase error:', err);
+  document.getElementById('content').innerHTML =
+    '<div class="loading-state" style="color:#A8423A;">No se pudo conectar con la base de datos. Inténtalo en unos segundos.</div>';
+});
+
+db.ref('semana').on('value', snap => {
+  const data = snap.val() || {};
+  weekDates = {};
+  DAYS.forEach(d => {
+    if (data[d] && data[d].fecha) weekDates[d] = data[d].fecha;
+  });
+  render();
+});
+
+db.ref('ajustes/centerName').on('value', snap => {
+  centerName = snap.val() || '';
+  document.getElementById('centerName').textContent = centerName;
+});
+
+window.addEventListener('hashchange', highlightCurrentDayInNav);
+
+// On load: scroll to today's section if no hash provided
+window.addEventListener('load', () => {
+  if (!window.location.hash) {
+    // Don't auto-scroll; the user opened the index. They can pick.
+    highlightCurrentDayInNav();
+  } else {
+    setTimeout(highlightCurrentDayInNav, 100);
+  }
+});
+</script>
+
+</body>
+</html>
