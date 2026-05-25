@@ -450,7 +450,7 @@ footer .heart {
     <div class="center-name" id="centerName"></div>
     <h1 class="masthead-title serif">Sustituciones de la semana</h1>
     <p class="masthead-sub">
-      <span>Actualizado en tiempo real</span>
+      <span id="weekRange">—</span>
       <span class="dot"></span>
       <span class="last-updated" id="lastUpdated">—</span>
     </p>
@@ -699,6 +699,34 @@ function updateLastUpdated() {
   el.textContent = now.toLocaleString('es-ES', {
     day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
   });
+  updateWeekRange();
+}
+
+function updateWeekRange() {
+  const el = document.getElementById('weekRange');
+  if (!el) return;
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const dow = today.getDay(); // 0=Dom, 1=Lun .. 6=Sab
+
+  // Calcular el lunes de la semana en curso (o, si es fin de semana,
+  // el lunes de la próxima semana, que es la que se está preparando)
+  const monday = new Date(today);
+  if (dow === 0)        monday.setDate(today.getDate() + 1);   // domingo → lunes siguiente
+  else if (dow === 6)   monday.setDate(today.getDate() + 2);   // sábado → lunes siguiente
+  else                  monday.setDate(today.getDate() - (dow - 1)); // lun..vie → lunes de esta semana
+
+  const friday = new Date(monday);
+  friday.setDate(monday.getDate() + 4);
+
+  el.textContent = 'Semana del ' + formatWeekDate(monday) + ' al ' + formatWeekDate(friday);
+}
+
+function formatWeekDate(d) {
+  // "lunes 25 de mayo" (solo día y mes si están en el mismo mes;
+  // si lunes y viernes caen en meses distintos, queda bien igualmente
+  // porque cada uno lleva su mes)
+  return d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' });
 }
 
 // ============================================================
