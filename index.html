@@ -168,6 +168,101 @@ body {
 }
 .day-nav a.is-current .day-nav-date { opacity: .75; }
 
+/* ========= TEACHER FILTER ========= */
+.filter-bar {
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-lg);
+  padding: 12px 14px 12px 16px;
+  margin-bottom: 28px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: var(--shadow-1);
+}
+.filter-bar.is-active {
+  background: var(--accent-tint);
+  border-color: var(--accent-soft);
+}
+.filter-icon {
+  width: 36px; height: 36px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--paper-3);
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  transition: background .15s, color .15s;
+}
+.filter-bar.is-active .filter-icon {
+  background: var(--accent);
+  color: var(--paper);
+}
+.filter-icon svg { width: 16px; height: 16px; stroke-width: 2; }
+.filter-body { flex: 1; min-width: 0; }
+.filter-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .12em;
+  color: var(--muted);
+  margin-bottom: 2px;
+  font-weight: 500;
+}
+.filter-select {
+  width: 100%;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--ink);
+  padding: 0;
+  outline: none;
+  font-weight: 500;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6' fill='none' stroke='%236B6557' stroke-width='1.5'%3E%3Cpath d='M1 1l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0 center;
+  padding-right: 18px;
+}
+.filter-bar.is-active .filter-select { color: var(--accent); }
+.filter-clear {
+  width: 30px; height: 30px;
+  border-radius: var(--r-sm);
+  display: none;
+  place-items: center;
+  cursor: pointer;
+  color: var(--muted);
+  transition: background .15s, color .15s;
+  flex-shrink: 0;
+}
+.filter-clear:hover { background: var(--paper-2); color: var(--ink); }
+.filter-clear svg { width: 16px; height: 16px; stroke-width: 2; }
+.filter-bar.is-active .filter-clear { display: grid; }
+
+.filter-empty {
+  background: var(--paper-2);
+  border: 1px dashed var(--rule-strong);
+  border-radius: var(--r-lg);
+  padding: 26px 22px;
+  text-align: center;
+}
+.filter-empty-text {
+  font-family: 'Fraunces', serif;
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 1.45;
+  font-variation-settings: "opsz" 30;
+  color: var(--muted);
+  max-width: 32ch;
+  margin: 0 auto;
+}
+.filter-empty-text strong {
+  color: var(--ink);
+  font-weight: 500;
+}
+
 /* ========= DAY SECTION ========= */
 .day {
   margin-bottom: 48px;
@@ -436,6 +531,21 @@ footer .heart {
     <div class="day-nav" id="dayNav"></div>
   </nav>
 
+  <div class="filter-bar" id="filterBar">
+    <div class="filter-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    </div>
+    <div class="filter-body">
+      <div class="filter-label">Filtrar por docente</div>
+      <select class="filter-select" id="teacherFilter" aria-label="Filtrar por docente">
+        <option value="">Ver todas las sustituciones</option>
+      </select>
+    </div>
+    <button class="filter-clear" id="filterClear" title="Quitar filtro">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+
   <div id="content">
     <div class="loading-state">
       <div class="spinner"></div>
@@ -486,6 +596,10 @@ const DAY_DOW = { lunes:1, martes:2, miercoles:3, jueves:4, viernes:5 };
 let subsByKey = {};          // raw
 let weekDates = {};          // { lunes: '2026-05-25', ... }
 let centerName = '';
+let teachersById = {};       // { id: { nombre, departamento } }
+let activeFilter = '';       // teacher id seleccionado (vacío = sin filtro)
+
+const FILTER_STORAGE_KEY = 'sustituciones_publicFilter';
 
 // ============================================================
 // Helpers
@@ -541,6 +655,11 @@ function render() {
   Object.entries(subsByKey).forEach(([key, sub]) => {
     const day = normalizeDay(sub.dia);
     if (!day) return;
+    // Aplicar filtro de docente: solo incluye la sustitución si el docente
+    // elegido aparece como ausente o como sustituto
+    if (activeFilter) {
+      if (sub.ausenteId !== activeFilter && sub.sustitutoId !== activeFilter) return;
+    }
     byDay[day].push({ key, ...sub });
   });
   // Sort each day by hour
@@ -582,11 +701,20 @@ function renderContent(byDay) {
     const dateIso = weekDates[d] || fallbackDate;
     const dateLong = formatDateLong(dateIso);
 
+    const filteredTeacherName = activeFilter && teachersById[activeFilter]
+      ? teachersById[activeFilter].nombre
+      : '';
+
     const inner = subs.length === 0
-      ? `<div class="day-empty">
-           <div class="day-empty-mark serif">·</div>
-           <p class="day-empty-text serif">Todavía no hemos publicado las sustituciones de este día.</p>
-         </div>`
+      ? (activeFilter
+         ? `<div class="day-empty">
+              <div class="day-empty-mark serif">·</div>
+              <p class="day-empty-text serif"><strong>${escapeHtml(filteredTeacherName)}</strong> no aparece en las sustituciones de este día.</p>
+            </div>`
+         : `<div class="day-empty">
+              <div class="day-empty-mark serif">·</div>
+              <p class="day-empty-text serif">Todavía no hemos publicado las sustituciones de este día.</p>
+            </div>`)
       : `<div class="subs">${subs.map(renderSub).join('')}</div>`;
 
     return `
@@ -679,6 +807,63 @@ db.ref('semana').on('value', snap => {
 db.ref('ajustes/centerName').on('value', snap => {
   centerName = snap.val() || '';
   document.getElementById('centerName').textContent = centerName;
+});
+
+// Cargar el claustro para poblar el filtro
+db.ref('docentes').on('value', snap => {
+  teachersById = snap.val() || {};
+  renderTeacherFilter();
+  render();
+});
+
+function renderTeacherFilter() {
+  const select = document.getElementById('teacherFilter');
+  // Ordenar docentes alfabéticamente por nombre
+  const list = Object.entries(teachersById)
+    .map(([id, t]) => ({ id, nombre: t.nombre || '', departamento: t.departamento || '' }))
+    .filter(t => t.nombre)
+    .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
+
+  // Conservar la selección previa si todavía existe ese docente
+  const previousValue = select.value;
+  select.innerHTML = '<option value="">Ver todas las sustituciones</option>' +
+    list.map(t => `<option value="${escapeHtml(t.id)}">${escapeHtml(t.nombre)}</option>`).join('');
+
+  // Restaurar selección o cargar la guardada en localStorage
+  let valueToUse = previousValue;
+  if (!valueToUse) {
+    try { valueToUse = localStorage.getItem(FILTER_STORAGE_KEY) || ''; }
+    catch(e) {}
+  }
+  if (valueToUse && teachersById[valueToUse]) {
+    select.value = valueToUse;
+    activeFilter = valueToUse;
+    document.getElementById('filterBar').classList.add('is-active');
+  } else {
+    select.value = '';
+    activeFilter = '';
+    document.getElementById('filterBar').classList.remove('is-active');
+  }
+}
+
+// Cambio en el desplegable
+document.getElementById('teacherFilter').addEventListener('change', e => {
+  activeFilter = e.target.value;
+  document.getElementById('filterBar').classList.toggle('is-active', !!activeFilter);
+  try {
+    if (activeFilter) localStorage.setItem(FILTER_STORAGE_KEY, activeFilter);
+    else localStorage.removeItem(FILTER_STORAGE_KEY);
+  } catch(e) {}
+  render();
+});
+
+// Botón X para limpiar
+document.getElementById('filterClear').addEventListener('click', () => {
+  activeFilter = '';
+  document.getElementById('teacherFilter').value = '';
+  document.getElementById('filterBar').classList.remove('is-active');
+  try { localStorage.removeItem(FILTER_STORAGE_KEY); } catch(e) {}
+  render();
 });
 
 window.addEventListener('hashchange', highlightCurrentDayInNav);
