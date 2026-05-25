@@ -363,6 +363,32 @@ body {
   line-height: 1.5;
 }
 
+.sub-fresh-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  padding: 3px 8px;
+  border-radius: 100px;
+  background: var(--accent);
+  color: var(--paper-2);
+  font-weight: 600;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+  font-family: 'IBM Plex Sans', sans-serif;
+}
+.sub-fresh-badge::before {
+  content: "";
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--paper-2);
+  animation: pulse-fresh 1.6s ease-in-out infinite;
+}
+@keyframes pulse-fresh {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .4; }
+}
+
 /* ========= EMPTY STATE PER DAY ========= */
 .day-empty {
   background: var(--paper-2);
@@ -672,6 +698,19 @@ function renderSub(s) {
   const tags = [];
   if (grade) tags.push(`<span class="tag">${escapeHtml(grade)}</span>`);
 
+  // Badge "actualizado hace X" si la sustitución se ha modificado
+  // en los últimos 60 minutos
+  let freshBadge = '';
+  if (s.actualizado && typeof s.actualizado === 'number') {
+    const minsAgo = Math.floor((Date.now() - s.actualizado) / 60000);
+    if (minsAgo < 60) {
+      const label = minsAgo < 1
+        ? 'recién publicado'
+        : 'hace ' + minsAgo + ' min';
+      freshBadge = `<span class="sub-fresh-badge">${label}</span>`;
+    }
+  }
+
   return `
     <article class="sub">
       <div class="sub-hour">
@@ -682,6 +721,7 @@ function renderSub(s) {
         <div class="sub-head">
           ${subject ? `<span class="sub-subject">${escapeHtml(subject)}</span>` : ''}
           ${tags.join('')}
+          ${freshBadge}
         </div>
         <div class="sub-people">
           <span class="sub-absent">${escapeHtml(absent)}</span>
@@ -820,6 +860,10 @@ window.addEventListener('hashchange', () => {
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 });
+
+// Re-render cada minuto para refrescar los badges "hace X min"
+// que dejan de mostrarse a partir de los 60 minutos
+setInterval(() => render(), 60 * 1000);
 </script>
 
 </body>
