@@ -33,7 +33,6 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
-html { scroll-behavior: smooth; scroll-padding-top: 80px; }
 html, body {
   background: var(--paper);
   color: var(--ink);
@@ -100,73 +99,6 @@ body {
   letter-spacing: .01em;
 }
 .masthead-sub span.dot { display: inline-block; width: 3px; height: 3px; border-radius: 50%; background: var(--rule-strong); vertical-align: middle; margin: 0 8px; }
-
-/* ========= STICKY DAY NAV ========= */
-.day-nav-shell {
-  position: sticky;
-  top: 0;
-  background: rgba(247, 243, 236, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  z-index: 20;
-  margin: 0 -22px 28px;
-  padding: 12px 22px;
-  border-bottom: 1px solid var(--rule);
-}
-.day-nav {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 4px;
-  max-width: 640px;
-  margin: 0 auto;
-}
-.day-nav a {
-  text-decoration: none;
-  color: var(--ink-2);
-  text-align: center;
-  padding: 8px 4px 9px;
-  border-radius: var(--r-sm);
-  font-size: 13px;
-  font-weight: 500;
-  transition: background .15s, color .15s;
-  font-variant-numeric: tabular-nums;
-  position: relative;
-}
-.day-nav a:hover { background: var(--paper-3); }
-.day-nav a.is-current {
-  background: var(--ink);
-  color: var(--paper);
-}
-.day-nav a.has-content::after {
-  content: "";
-  position: absolute;
-  top: 4px;
-  right: 50%;
-  transform: translateX(8px);
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--accent);
-}
-.day-nav a.is-current.has-content::after { background: var(--accent-soft); }
-.day-nav-name {
-  display: block;
-  font-family: 'Fraunces', serif;
-  font-weight: 500;
-  font-variation-settings: "opsz" 14;
-  font-size: 14px;
-  text-transform: capitalize;
-  line-height: 1.1;
-}
-.day-nav-date {
-  display: block;
-  font-size: 10.5px;
-  margin-top: 2px;
-  opacity: .55;
-  letter-spacing: .04em;
-  font-variant-numeric: tabular-nums;
-}
-.day-nav a.is-current .day-nav-date { opacity: .75; }
 
 /* ========= TEACHER FILTER ========= */
 .filter-bar {
@@ -501,16 +433,13 @@ footer .heart {
 
 @media (max-width: 480px) {
   .wrap { padding: 20px 16px 64px; }
-  .day-nav-shell { margin: 0 -16px 24px; padding: 10px 16px; }
   .day-name { font-size: 30px; }
   .day-count strong { font-size: 24px; }
   .sub { grid-template-columns: 46px 1fr; padding: 12px 14px 12px 16px; gap: 10px; }
   .sub-hour-num { font-size: 24px; }
   .sub-subject { font-size: 15px; }
   .sub-people { font-size: 14px; }
-  .day-nav-name { font-size: 13px; }
-}
-</style>
+}</style>
 </head>
 <body>
 
@@ -526,10 +455,6 @@ footer .heart {
       <span class="last-updated" id="lastUpdated">—</span>
     </p>
   </header>
-
-  <nav class="day-nav-shell" aria-label="Navegación por día">
-    <div class="day-nav" id="dayNav"></div>
-  </nav>
 
   <div class="filter-bar" id="filterBar">
     <div class="filter-icon">
@@ -671,31 +596,33 @@ function render() {
     });
   });
 
-  renderNav(byDay);
   renderContent(byDay);
   updateLastUpdated();
-  highlightCurrentDayInNav();
-}
-
-function renderNav(byDay) {
-  const nav = document.getElementById('dayNav');
-  const currentKey = getCurrentDayKey();
-  nav.innerHTML = DAYS.map(d => {
-    const has = byDay[d].length > 0;
-    const date = weekDates[d];
-    const dateLbl = date ? formatDateShort(date) : '';
-    return `
-      <a href="#${d}" data-day="${d}"
-         class="${d === currentKey ? 'is-current' : ''} ${has ? 'has-content' : ''}">
-        <span class="day-nav-name">${DAY_SHORT[d]}</span>
-        <span class="day-nav-date">${dateLbl}</span>
-      </a>`;
-  }).join('');
 }
 
 function renderContent(byDay) {
   const root = document.getElementById('content');
-  root.innerHTML = DAYS.map(d => {
+
+  // Si hay filtro activo, mostramos solo los días con sustituciones
+  // para ese docente. Si no hay filtro, mostramos los 5 días.
+  const daysToShow = activeFilter
+    ? DAYS.filter(d => byDay[d].length > 0)
+    : DAYS;
+
+  // Caso especial: filtro activo pero el docente no aparece en ningún día
+  if (activeFilter && daysToShow.length === 0) {
+    const filteredTeacherName = teachersById[activeFilter]
+      ? teachersById[activeFilter].nombre
+      : '';
+    root.innerHTML = `
+      <div class="day-empty" style="margin-top: 12px;">
+        <div class="day-empty-mark serif">·</div>
+        <p class="day-empty-text serif"><strong>${escapeHtml(filteredTeacherName)}</strong> no tiene sustituciones esta semana.</p>
+      </div>`;
+    return;
+  }
+
+  root.innerHTML = daysToShow.map(d => {
     const subs = byDay[d];
     const fallbackDate = nextDateForDow(DAY_DOW[d]);
     const dateIso = weekDates[d] || fallbackDate;
@@ -772,15 +699,6 @@ function updateLastUpdated() {
   el.textContent = now.toLocaleString('es-ES', {
     day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
   });
-}
-
-function highlightCurrentDayInNav() {
-  const hash = window.location.hash.replace('#','');
-  if (!hash) return;
-  const navLinks = document.querySelectorAll('.day-nav a');
-  navLinks.forEach(a => a.classList.remove('is-current'));
-  const match = document.querySelector(`.day-nav a[data-day="${hash}"]`);
-  if (match) match.classList.add('is-current');
 }
 
 // ============================================================
@@ -866,15 +784,12 @@ document.getElementById('filterClear').addEventListener('click', () => {
   render();
 });
 
-window.addEventListener('hashchange', highlightCurrentDayInNav);
-
-// On load: scroll to today's section if no hash provided
-window.addEventListener('load', () => {
-  if (!window.location.hash) {
-    // Don't auto-scroll; the user opened the index. They can pick.
-    highlightCurrentDayInNav();
-  } else {
-    setTimeout(highlightCurrentDayInNav, 100);
+window.addEventListener('hashchange', () => {
+  // Si llega un ancla #lunes, #martes... hace scroll al día correspondiente
+  const hash = window.location.hash.replace('#','');
+  if (hash && DAYS.includes(hash)) {
+    const el = document.getElementById(hash);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 });
 </script>
