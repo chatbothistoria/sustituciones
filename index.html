@@ -444,8 +444,16 @@ body {
 }
 
 /* ========= EXCURSIÓN EN EL TABLÓN ========= */
-.sub.excursion-info::before { background: #3B82F6; }
-.sub.excursion-sub::before  { background: #7C3AED; }
+.sub.excursion-info,
+.sub.excursion-sub {
+  background: #DBEAFE;
+  border-color: #93C5FD;
+}
+.sub.excursion-info::before,
+.sub.excursion-sub::before {
+  background: #1D4ED8;
+  width: 5px;
+}
 
 .excursion-chip {
   display: inline-flex;
@@ -454,9 +462,9 @@ body {
   font-size: 10.5px;
   padding: 2px 8px;
   border-radius: 100px;
-  background: #DBEAFE;
-  color: #1D4ED8;
-  font-weight: 600;
+  background: #FEF08A;
+  color: #854D0E;
+  font-weight: 700;
   letter-spacing: .03em;
   text-transform: uppercase;
 }
