@@ -606,6 +606,7 @@ let centerName = '';
 let teachersById = {};       // { id: { nombre } } — listado público reducido
 let activeFilter = '';       // teacher id seleccionado (vacío = sin filtro)
 let avisos = {};             // { lunes: 'texto', ... }
+let lastUpdatedTs = null;     // timestamp real de Firebase
 
 const FILTER_STORAGE_KEY = 'sustituciones_publicFilter';
 
@@ -834,20 +835,26 @@ function updateLastUpdated() {
 function updateWeekRange() {
   const el = document.getElementById('weekRange');
   if (!el) return;
+
+  // Preferimos las fechas guardadas en Firebase. Así el tablón muestra la semana
+  // que se está preparando, no necesariamente la semana calculada por el reloj del móvil.
+  if (weekDates.lunes && weekDates.viernes) {
+    const monday = new Date(weekDates.lunes + 'T00:00:00');
+    const friday = new Date(weekDates.viernes + 'T00:00:00');
+    el.textContent = 'Semana del ' + formatWeekDate(monday) + ' al ' + formatWeekDate(friday);
+    return;
+  }
+
   const today = new Date();
   today.setHours(0,0,0,0);
-  const dow = today.getDay(); // 0=Dom, 1=Lun .. 6=Sab
-
-  // Calcular el lunes de la semana en curso (o, si es fin de semana,
-  // el lunes de la próxima semana, que es la que se está preparando)
+  const dow = today.getDay();
   const monday = new Date(today);
-  if (dow === 0)        monday.setDate(today.getDate() + 1);   // domingo → lunes siguiente
-  else if (dow === 6)   monday.setDate(today.getDate() + 2);   // sábado → lunes siguiente
-  else                  monday.setDate(today.getDate() - (dow - 1)); // lun..vie → lunes de esta semana
+  if (dow === 0)        monday.setDate(today.getDate() + 1);
+  else if (dow === 6)   monday.setDate(today.getDate() + 2);
+  else                  monday.setDate(today.getDate() - (dow - 1));
 
   const friday = new Date(monday);
   friday.setDate(monday.getDate() + 4);
-
   el.textContent = 'Semana del ' + formatWeekDate(monday) + ' al ' + formatWeekDate(friday);
 }
 
@@ -888,6 +895,13 @@ db.ref('ajustes/centerName').on('value', snap => {
 db.ref('avisos').on('value', snap => {
   avisos = snap.val() || {};
   render();
+});
+
+// Última actualización real guardada desde el panel
+// Si no existe aún, se mostrará un mensaje neutro.
+db.ref('metadata/lastUpdated').on('value', snap => {
+  lastUpdatedTs = snap.val() || null;
+  updateLastUpdated();
 });
 
 // Cargar el listado público reducido de docentes para poblar el filtro
