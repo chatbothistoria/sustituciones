@@ -603,7 +603,7 @@ const DAY_DOW = { lunes:1, martes:2, miercoles:3, jueves:4, viernes:5 };
 let subsByKey = {};          // raw
 let weekDates = {};          // { lunes: '2026-05-25', ... }
 let centerName = '';
-let teachersById = {};       // { id: { nombre, departamento } }
+let teachersById = {};       // { id: { nombre } } — listado público reducido
 let activeFilter = '';       // teacher id seleccionado (vacío = sin filtro)
 let avisos = {};             // { lunes: 'texto', ... }
 
@@ -890,8 +890,8 @@ db.ref('avisos').on('value', snap => {
   render();
 });
 
-// Cargar el claustro para poblar el filtro
-db.ref('docentes').on('value', snap => {
+// Cargar el listado público reducido de docentes para poblar el filtro
+db.ref('docentesPublicos').on('value', snap => {
   teachersById = snap.val() || {};
   renderTeacherFilter();
   render();
@@ -901,7 +901,7 @@ function renderTeacherFilter() {
   const select = document.getElementById('teacherFilter');
   // Ordenar docentes alfabéticamente por nombre
   const list = Object.entries(teachersById)
-    .map(([id, t]) => ({ id, nombre: t.nombre || '', departamento: t.departamento || '' }))
+    .map(([id, t]) => ({ id, nombre: t.nombre || '' }))
     .filter(t => t.nombre)
     .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'));
 
