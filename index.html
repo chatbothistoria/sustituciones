@@ -586,6 +586,20 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
 // ============================================================
+// Helpers de hora — soporta valores numéricos (1-5) y 'R' (recreo)
+// ============================================================
+function horaToSortKey(h) {
+  if (String(h).toUpperCase() === 'R') return 6;
+  const n = parseInt(String(h).replace(/[^\d]/g,''), 10);
+  return isNaN(n) ? 99 : n;
+}
+function horaLabel(h) {
+  if (String(h).toUpperCase() === 'R') return 'Recreo';
+  const n = parseInt(String(h).replace(/[^\d]/g,''), 10);
+  return isNaN(n) ? String(h) : String(n) + 'ª';
+}
+
+// ============================================================
 // Constants
 // ============================================================
 const DAYS = ['lunes','martes','miercoles','jueves','viernes'];
@@ -611,6 +625,8 @@ let avisos = {};             // { lunes: 'texto', ... }
 let lastUpdatedTs = null;     // timestamp real de Firebase
 
 const FILTER_STORAGE_KEY = 'sustituciones_publicFilter';
+const FILTER_STORAGE_TS_KEY = 'sustituciones_publicFilter_ts';
+const FILTER_EXPIRY_MS = 10 * 60 * 60 * 1000; // 10 horas
 
 // ============================================================
 // Helpers
@@ -676,9 +692,7 @@ function render() {
   // Sort each day by hour
   DAYS.forEach(d => {
     byDay[d].sort((a,b) => {
-      const ah = parseInt(String(a.hora).replace(/[^\d]/g,''),10) || 99;
-      const bh = parseInt(String(b.hora).replace(/[^\d]/g,''),10) || 99;
-      return ah - bh;
+      return horaToSortKey(a.hora) - horaToSortKey(b.hora);
     });
   });
 
@@ -758,7 +772,7 @@ function renderContent(byDay) {
 }
 
 function renderSub(s) {
-  const hour = parseInt(String(s.hora).replace(/[^\d]/g,''),10) || s.hora;
+  const hour = s.hora;
   const subject = s.asignatura || s.materia || '';
   const grade = s.grupo || s.curso || '';
   // Backwards compat: accept old "ausente" string OR new "ausenteNombre"
@@ -809,7 +823,7 @@ function renderSub(s) {
   return `
     <article class="${subClass}">
       <div class="sub-hour">
-        <div class="sub-hour-num">${escapeHtml(hour)}${typeof hour === 'number' ? 'ª' : ''}</div>
+        <div class="sub-hour-num">${escapeHtml(horaLabel(hour))}</div>
         <div class="sub-hour-label">hora</div>
       </div>
       <div class="sub-body">
@@ -870,7 +884,23 @@ function formatWeekDate(d) {
 // ============================================================
 // Listeners
 // ============================================================
+// Timeout de conexión: si en 12s no llega ningún dato, mostrar aviso
+let _initialDataReceived = false;
+const _connectionTimeout = setTimeout(() => {
+  if (!_initialDataReceived) {
+    const content = document.getElementById('content');
+    if (content && content.querySelector('.spinner')) {
+      content.innerHTML =
+        '<div class="loading-state" style="color:var(--warning,#B8852C);">' +
+        'Tardando más de lo esperado. Comprueba tu conexión a internet e inténtalo de nuevo.' +
+        '</div>';
+    }
+  }
+}, 12000);
+
 db.ref('sustituciones').on('value', snap => {
+  _initialDataReceived = true;
+  clearTimeout(_connectionTimeout);
   subsByKey = snap.val() || {};
   render();
 }, err => {
@@ -926,11 +956,19 @@ function renderTeacherFilter() {
   select.innerHTML = '<option value="">Ver todas las sustituciones</option>' +
     list.map(t => `<option value="${escapeHtml(t.id)}">${escapeHtml(t.nombre)}</option>`).join('');
 
-  // Restaurar selección o cargar la guardada en localStorage
+  // Restaurar selección o cargar la guardada en localStorage (expira a las 10h)
   let valueToUse = previousValue;
   if (!valueToUse) {
-    try { valueToUse = localStorage.getItem(FILTER_STORAGE_KEY) || ''; }
-    catch(e) {}
+    try {
+      const savedTs = parseInt(localStorage.getItem(FILTER_STORAGE_TS_KEY) || '0', 10);
+      const expired = Date.now() - savedTs > FILTER_EXPIRY_MS;
+      if (expired) {
+        localStorage.removeItem(FILTER_STORAGE_KEY);
+        localStorage.removeItem(FILTER_STORAGE_TS_KEY);
+      } else {
+        valueToUse = localStorage.getItem(FILTER_STORAGE_KEY) || '';
+      }
+    } catch(e) {}
   }
   if (valueToUse && teachersById[valueToUse]) {
     select.value = valueToUse;
@@ -948,8 +986,13 @@ document.getElementById('teacherFilter').addEventListener('change', e => {
   activeFilter = e.target.value;
   document.getElementById('filterBar').classList.toggle('is-active', !!activeFilter);
   try {
-    if (activeFilter) localStorage.setItem(FILTER_STORAGE_KEY, activeFilter);
-    else localStorage.removeItem(FILTER_STORAGE_KEY);
+    if (activeFilter) {
+      localStorage.setItem(FILTER_STORAGE_KEY, activeFilter);
+      localStorage.setItem(FILTER_STORAGE_TS_KEY, String(Date.now()));
+    } else {
+      localStorage.removeItem(FILTER_STORAGE_KEY);
+      localStorage.removeItem(FILTER_STORAGE_TS_KEY);
+    }
   } catch(e) {}
   render();
 });
@@ -959,7 +1002,10 @@ document.getElementById('filterClear').addEventListener('click', () => {
   activeFilter = '';
   document.getElementById('teacherFilter').value = '';
   document.getElementById('filterBar').classList.remove('is-active');
-  try { localStorage.removeItem(FILTER_STORAGE_KEY); } catch(e) {}
+  try {
+    localStorage.removeItem(FILTER_STORAGE_KEY);
+    localStorage.removeItem(FILTER_STORAGE_TS_KEY);
+  } catch(e) {}
   render();
 });
 
