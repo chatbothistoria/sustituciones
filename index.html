@@ -293,6 +293,15 @@ body {
   letter-spacing: -.025em;
   color: var(--ink);
 }
+.sub-hour-num.is-recreo {
+  font-size: 13px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  letter-spacing: .01em;
+  padding-top: 6px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
 .sub-hour-label {
   font-size: 9.5px;
   text-transform: uppercase;
@@ -814,7 +823,7 @@ function renderSub(s) {
   return `
     <article class="${subClass}" data-actualizado="${s.actualizado || ''}">
       <div class="sub-hour">
-        <div class="sub-hour-num">${escapeHtml(horaLabel(hour))}</div>
+        <div class="sub-hour-num${s.hora === 'R' ? ' is-recreo' : ''}">${escapeHtml(horaLabel(hour))}</div>
         <div class="sub-hour-label">${s.hora === 'R' ? '' : 'hora'}</div>
       </div>
       <div class="sub-body">
