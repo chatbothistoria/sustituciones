@@ -3,12 +3,20 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://chatbothistoria.github.io/sustituciones/">
+<meta name="description" content="Tablón de sustituciones del profesorado. Consulta las guardias y sustituciones del día.">
+<meta property="og:title" content="Tablón de sustituciones">
+<meta property="og:description" content="Consulta las sustituciones y guardias del día en tu centro.">
+<meta property="og:type" content="website">
 <title>Tablón de sustituciones</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght,SOFT,WONK@9..144,400..600,0..100,0..1&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lora:ital,wght@0,400..700;1,400..600&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+<!-- Configuración Firebase — archivo externo NO incluido en el repositorio -->
+<script src="firebase-config.js"></script>
 <style>
 :root {
   --ink: #1A2421;
@@ -25,6 +33,7 @@
   --accent-tint: #FBEEE0;
   --danger: #A8423A;
   --success: #4A7C59;
+  --shadow-1: 0 1px 2px rgba(26,36,33,.04), 0 1px 1px rgba(26,36,33,.03);
   --warning: #B8852C;
   --warning-soft: #F5E6C9;
   --r-sm: 6px;
@@ -38,7 +47,7 @@
 html, body {
   background: var(--paper);
   color: var(--ink);
-  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
   font-size: 16px;
   line-height: 1.55;
   -webkit-font-smoothing: antialiased;
@@ -53,7 +62,7 @@ body {
   min-height: 100vh;
 }
 
-.serif { font-family: 'Fraunces', Georgia, serif; }
+.serif { font-family: 'Lora', Georgia, serif; }
 
 .wrap {
   max-width: 640px;
@@ -77,20 +86,18 @@ body {
   font-weight: 500;
 }
 .center-name {
-  font-family: 'Fraunces', serif;
+  font-family: 'Lora', serif;
   font-weight: 500;
   font-size: 14px;
-  font-variation-settings: "opsz" 14;
   color: var(--ink-2);
   letter-spacing: .02em;
   margin-bottom: 4px;
 }
 .masthead-title {
-  font-family: 'Fraunces', serif;
+  font-family: 'Lora', serif;
   font-weight: 400;
   font-size: clamp(34px, 7vw, 44px);
   line-height: 1.05;
-  font-variation-settings: "opsz" 144, "SOFT" 30;
   letter-spacing: -.02em;
   color: var(--ink);
   margin-bottom: 6px;
@@ -183,11 +190,10 @@ body {
   text-align: center;
 }
 .filter-empty-text {
-  font-family: 'Fraunces', serif;
+  font-family: 'Lora', serif;
   font-weight: 400;
   font-size: 16px;
   line-height: 1.45;
-  font-variation-settings: "opsz" 30;
   color: var(--muted);
   max-width: 32ch;
   margin: 0 auto;
@@ -215,11 +221,10 @@ body {
 }
 .day-header-left { min-width: 0; }
 .day-name {
-  font-family: 'Fraunces', serif;
+  font-family: 'Lora', serif;
   font-weight: 400;
   font-size: 38px;
   line-height: 1;
-  font-variation-settings: "opsz" 144, "SOFT" 50;
   letter-spacing: -.02em;
   text-transform: capitalize;
   color: var(--ink);
@@ -231,11 +236,10 @@ body {
   letter-spacing: .015em;
 }
 .day-count {
-  font-family: 'Fraunces', serif;
+  font-family: 'Lora', serif;
   font-weight: 400;
   font-size: 13px;
   color: var(--muted);
-  font-variation-settings: "opsz" 14;
   text-align: right;
   padding-bottom: 4px;
 }
@@ -244,7 +248,6 @@ body {
   font-size: 30px;
   line-height: 1;
   color: var(--ink);
-  font-variation-settings: "opsz" 144;
   margin-bottom: 2px;
   letter-spacing: -.02em;
 }
@@ -283,11 +286,10 @@ body {
   padding-top: 3px;
 }
 .sub-hour-num {
-  font-family: 'Fraunces', serif;
+  font-family: 'Lora', serif;
   font-weight: 400;
   font-size: 30px;
   line-height: 1;
-  font-variation-settings: "opsz" 144;
   letter-spacing: -.025em;
   color: var(--ink);
 }
@@ -341,7 +343,7 @@ body {
 }
 .sub-arrow {
   color: var(--muted-2);
-  font-family: 'Fraunces', serif;
+  font-family: 'Lora', serif;
   font-size: 24px;
   font-weight: 400;
   line-height: 1;
@@ -377,7 +379,7 @@ body {
   font-weight: 600;
   letter-spacing: .03em;
   text-transform: uppercase;
-  font-family: 'IBM Plex Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 .sub-fresh-badge::before {
   content: "";
@@ -400,21 +402,19 @@ body {
   text-align: center;
 }
 .day-empty-mark {
-  font-family: 'Fraunces', serif;
+  font-family: 'Lora', serif;
   font-weight: 400;
   font-size: 44px;
   line-height: 1;
-  font-variation-settings: "opsz" 144, "WONK" 1;
   color: var(--rule-strong);
   margin-bottom: 8px;
   letter-spacing: -.04em;
 }
 .day-empty-text {
-  font-family: 'Fraunces', serif;
+  font-family: 'Lora', serif;
   font-weight: 400;
   font-size: 16px;
   line-height: 1.45;
-  font-variation-settings: "opsz" 30;
   color: var(--muted);
   letter-spacing: .005em;
   max-width: 30ch;
@@ -504,12 +504,12 @@ footer {
   letter-spacing: .02em;
 }
 footer .last-updated {
-  font-family: 'IBM Plex Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-variant-numeric: tabular-nums;
 }
 footer .heart {
   display: block;
-  font-family: 'Fraunces', serif;
+  font-family: 'Lora', serif;
   font-size: 14px;
   margin-top: 6px;
   color: var(--rule-strong);
@@ -571,17 +571,8 @@ footer .heart {
 
 <script>
 // ============================================================
-// Firebase config — la misma del usuario
+// Firebase — config cargada desde firebase-config.js (archivo externo)
 // ============================================================
-const firebaseConfig = {
-  apiKey: "AIzaSyCCRTbv102n00--vww-yWxbyFUsnxflfAs",
-  authDomain: "sustituciones-a2e3b.firebaseapp.com",
-  databaseURL: "https://sustituciones-a2e3b-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "sustituciones-a2e3b",
-  storageBucket: "sustituciones-a2e3b.firebasestorage.app",
-  messagingSenderId: "401477983019",
-  appId: "1:401477983019:web:95a4a7bc5417672e48836e"
-};
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
@@ -589,9 +580,9 @@ const db = firebase.database();
 // Helpers de hora — soporta valores numéricos (1-5) y 'R' (recreo)
 // ============================================================
 function horaToSortKey(h) {
-  if (String(h).toUpperCase() === 'R') return 6;
+  if (String(h).toUpperCase() === 'R') return 35; // entre 3ª (30) y 4ª (40) hora
   const n = parseInt(String(h).replace(/[^\d]/g,''), 10);
-  return isNaN(n) ? 99 : n;
+  return isNaN(n) ? 99 : n * 10;
 }
 function horaLabel(h) {
   if (String(h).toUpperCase() === 'R') return 'Recreo';
@@ -821,10 +812,10 @@ function renderSub(s) {
                    (isExcursion ? 'sub excursion-sub' : 'sub');
 
   return `
-    <article class="${subClass}">
+    <article class="${subClass}" data-actualizado="${s.actualizado || ''}">
       <div class="sub-hour">
         <div class="sub-hour-num">${escapeHtml(horaLabel(hour))}</div>
-        <div class="sub-hour-label">hora</div>
+        <div class="sub-hour-label">${s.hora === 'R' ? '' : 'hora'}</div>
       </div>
       <div class="sub-body">
         <div class="sub-head">
@@ -921,6 +912,15 @@ db.ref('semana').on('value', snap => {
 db.ref('ajustes/centerName').on('value', snap => {
   centerName = snap.val() || '';
   document.getElementById('centerName').textContent = centerName;
+  if (centerName) {
+    document.title = 'Tablón de sustituciones — ' + centerName;
+    const ogTitle = document.querySelector('meta[property="og:title"]');
+    if (ogTitle) ogTitle.setAttribute('content', 'Tablón de sustituciones — ' + centerName);
+    const ogDesc = document.querySelector('meta[property="og:description"]');
+    if (ogDesc) ogDesc.setAttribute('content', 'Consulta las sustituciones y guardias del día en ' + centerName + '.');
+    const desc = document.querySelector('meta[name="description"]');
+    if (desc) desc.setAttribute('content', 'Tablón de sustituciones de ' + centerName + '. Consulta las guardias y sustituciones del día.');
+  }
 });
 
 // Avisos del día
@@ -1018,9 +1018,35 @@ window.addEventListener('hashchange', () => {
   }
 });
 
-// Re-render cada minuto para refrescar los badges "hace X min"
-// que dejan de mostrarse a partir de los 60 minutos
-setInterval(() => render(), 60 * 1000);
+// Actualiza cada minuto solo los badges "hace X min" sin reconstruir todo el DOM.
+// Cada artículo de sustitución lleva data-actualizado con el timestamp.
+function updateFreshBadges() {
+  document.querySelectorAll('article[data-actualizado]').forEach(article => {
+    // Si el nodo ya no está en el DOM (fue reemplazado por render()), ignorarlo
+    if (!article.isConnected) return;
+    const ts = parseInt(article.dataset.actualizado, 10);
+    if (!ts) return;
+    const minsAgo = Math.floor((Date.now() - ts) / 60000);
+    const badge = article.querySelector('.sub-fresh-badge');
+    if (minsAgo >= 60) {
+      badge?.remove();
+    } else {
+      const label = minsAgo < 1 ? 'recién publicado' : 'hace ' + minsAgo + ' min';
+      if (badge) {
+        badge.textContent = label;
+      } else {
+        const head = article.querySelector('.sub-head');
+        if (head) {
+          const newBadge = document.createElement('span');
+          newBadge.className = 'sub-fresh-badge';
+          newBadge.textContent = label;
+          head.appendChild(newBadge);
+        }
+      }
+    }
+  });
+}
+setInterval(updateFreshBadges, 60 * 1000);
 </script>
 
 </body>
