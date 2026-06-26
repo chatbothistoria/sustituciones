@@ -577,8 +577,9 @@ footer .heart {
   </div>
 
   <footer>
-    <span>Tablón de sustituciones</span>
+    <span id="footerCenterName"></span>
     <span class="heart">·</span>
+    <span>Tablón de sustituciones</span>
   </footer>
 
 </div>
@@ -926,6 +927,8 @@ db.ref('semana').on('value', snap => {
 db.ref('ajustes/centerName').on('value', snap => {
   centerName = snap.val() || '';
   document.getElementById('centerName').textContent = centerName;
+  const footerEl = document.getElementById('footerCenterName');
+  if (footerEl) footerEl.textContent = centerName || '';
   if (centerName) {
     document.title = 'Tablón de sustituciones — ' + centerName;
     const ogTitle = document.querySelector('meta[property="og:title"]');
