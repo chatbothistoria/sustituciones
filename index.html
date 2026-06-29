@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="index, follow">
+<meta name="theme-color" content="#F7F3EC">
 <link rel="canonical" href="https://chatbothistoria.github.io/sustituciones/">
 <meta name="description" content="Tablón de sustituciones del profesorado. Consulta las guardias y sustituciones del día.">
 <meta property="og:title" content="Tablón de sustituciones">
@@ -15,7 +16,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Lora:ital,wght@0,400..700;1,400..600&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
-<!-- Configuración Firebase — archivo externo NO incluido en el repositorio -->
+<!-- Configuración Firebase — subido a GitHub junto a index.html y protegido por restricción de dominio en Google Cloud -->
 <script src="firebase-config.js"></script>
 <style>
 :root {
@@ -577,8 +578,7 @@ footer .heart {
   </div>
 
   <footer>
-    <span id="footerCenterName"></span>
-    <span class="heart">·</span>
+    <span id="footerCenterName"></span><span class="heart" id="footerSep" style="display:none">·</span>
     <span>Tablón de sustituciones</span>
   </footer>
 
@@ -612,10 +612,6 @@ const DAYS = ['lunes','martes','miercoles','jueves','viernes'];
 const DAY_LABEL = {
   lunes: 'Lunes', martes: 'Martes', miercoles: 'Miércoles',
   jueves: 'Jueves', viernes: 'Viernes'
-};
-const DAY_SHORT = {
-  lunes: 'Lun', martes: 'Mar', miercoles: 'Mié',
-  jueves: 'Jue', viernes: 'Vie'
 };
 const DAY_DOW = { lunes:1, martes:2, miercoles:3, jueves:4, viernes:5 };
 
@@ -928,7 +924,9 @@ db.ref('ajustes/centerName').on('value', snap => {
   centerName = snap.val() || '';
   document.getElementById('centerName').textContent = centerName;
   const footerEl = document.getElementById('footerCenterName');
+  const footerSep = document.getElementById('footerSep');
   if (footerEl) footerEl.textContent = centerName || '';
+  if (footerSep) footerSep.style.display = centerName ? '' : 'none';
   if (centerName) {
     document.title = 'Tablón de sustituciones — ' + centerName;
     const ogTitle = document.querySelector('meta[property="og:title"]');
