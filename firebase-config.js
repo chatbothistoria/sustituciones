@@ -1,21 +1,14 @@
 // ============================================================
 // CONFIGURACIÓN DE FIREBASE
 // ============================================================
-// IMPORTANTE: Este archivo contiene credenciales del proyecto
-// Firebase. NO lo subas a repositorios públicos.
+// Este archivo está subido a GitHub Pages junto a index.html
+// y es cargado también por panel.html desde la URL pública.
 //
-// Instrucciones:
-// 1. Añade "firebase-config.js" a tu .gitignore
-// 2. Para index.html en GitHub Pages: sube este archivo
-//    manualmente al servidor o usa las instrucciones de
-//    restricción de dominio de Google Cloud (ver README).
-// 3. Para panel.html en local: simplemente tenlo en la misma
-//    carpeta que panel.html.
+// La clave está protegida por restricción de dominio en
+// Google Cloud Console (solo chatbothistoria.github.io/*).
 //
-// Restricción recomendada en Google Cloud Console:
-//   APIs & Services → Credentials → tu API key →
-//   "Application restrictions" → HTTP referrers →
-//   Añadir: chatbothistoria.github.io/* y localhost/*
+// Si necesitas cambiar el proyecto Firebase, actualiza este
+// archivo y vuelve a subirlo a GitHub.
 // ============================================================
 
 const firebaseConfig = {

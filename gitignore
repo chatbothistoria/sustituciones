@@ -1,2 +1,3 @@
-# Credenciales Firebase — NO subir al repositorio
-firebase-config.js
+# firebase-config.js está subido a GitHub intencionadamente
+# y protegido por restricción de dominio en Google Cloud.
+# No hay archivos que ignorar en este proyecto.
