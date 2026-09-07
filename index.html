@@ -685,8 +685,11 @@ function render() {
     const day = normalizeDay(sub.dia);
     if (!day) return;
     // Aplicar filtro de docente: solo incluye la sustitución si el docente
-    // elegido aparece como ausente o como sustituto
-    if (activeFilter) {
+    // elegido aparece como ausente o como sustituto.
+    // EXCEPCIÓN: las excursiones de día completo (todoDia: true) se muestran
+    // siempre a todos los docentes para evitar que alguien abandone su aula.
+    const isTodoDia = sub.todoDia === true || sub.todoDia === 'true';
+    if (activeFilter && !isTodoDia) {
       if (sub.ausenteId !== activeFilter && sub.sustitutoId !== activeFilter) return;
     }
     byDay[day].push({ key, ...sub });
@@ -777,15 +780,14 @@ function renderSub(s) {
   const hour = s.hora;
   const subject = s.asignatura || s.materia || '';
   const grade = s.grupo || s.curso || '';
-  // Backwards compat: accept old "ausente" string OR new "ausenteNombre"
   const absent = s.ausenteNombre || s.ausente || '—';
   const sub = s.sustitutoNombre || s.sustituto || '—';
   const notes = s.notas || '';
+  const isTodoDia = s.todoDia === true || s.todoDia === 'true';
 
   const tags = [];
   if (grade) tags.push(`<span class="tag">${escapeHtml(grade)}</span>`);
 
-  // Chip de excursión — detecta cualquier valor de motivo que contenga 'excursion'
   const isExcursion = s.motivo && s.motivo.toLowerCase().includes('excursion');
   const isNoSub = s.motivo === 'excursion_noSub';
   const excursionChip = isExcursion
@@ -795,8 +797,13 @@ function renderSub(s) {
        </span>`
     : '';
 
-  // Badge "actualizado hace X" si la sustitución se ha modificado
-  // en los últimos 60 minutos
+  // Banner de aviso para excursiones de día completo que se muestran a todos
+  const todoDiaBanner = isTodoDia
+    ? `<div style="background:#FEF9C3;border:1px solid #FCD34D;border-radius:6px;padding:5px 10px;font-size:11.5px;color:#854D0E;font-weight:600;margin-bottom:6px;">
+         ⚠️ Este docente está de excursión toda la mañana — su grupo permanece en el centro
+       </div>`
+    : '';
+
   let freshBadge = '';
   if (s.actualizado && typeof s.actualizado === 'number') {
     const minsAgo = Math.floor((Date.now() - s.actualizado) / 60000);
@@ -806,7 +813,6 @@ function renderSub(s) {
     }
   }
 
-  // Línea de quién sustituye (o mensaje de tutor para excursiones sin sustituto)
   const peopleLine = isNoSub
     ? `<div class="sub-people">
          <span class="sub-absent">${escapeHtml(absent)}</span>
@@ -829,6 +835,7 @@ function renderSub(s) {
         <div class="sub-hour-label">${s.hora === 'R' ? '' : 'hora'}</div>
       </div>
       <div class="sub-body">
+        ${todoDiaBanner}
         <div class="sub-head">
           ${subject ? `<span class="sub-subject">${escapeHtml(subject)}</span>` : ''}
           ${tags.join('')}
