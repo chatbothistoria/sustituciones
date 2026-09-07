@@ -686,10 +686,11 @@ function render() {
     if (!day) return;
     // Aplicar filtro de docente: solo incluye la sustitución si el docente
     // elegido aparece como ausente o como sustituto.
-    // EXCEPCIÓN: las excursiones de día completo (todoDia: true) se muestran
-    // siempre a todos los docentes para evitar que alguien abandone su aula.
-    const isTodoDia = sub.todoDia === true || sub.todoDia === 'true';
-    if (activeFilter && !isTodoDia) {
+    // EXCEPCIÓN: las excursiones sin sustituto (excursion_noSub) se muestran
+    // siempre a todos los docentes — el grupo se queda en el centro y
+    // cualquier docente podría necesitar saberlo para no abandonar su aula.
+    const isAlwaysVisible = sub.motivo === 'excursion_noSub' || sub.todoDia === true || sub.todoDia === 'true';
+    if (activeFilter && !isAlwaysVisible) {
       if (sub.ausenteId !== activeFilter && sub.sustitutoId !== activeFilter) return;
     }
     byDay[day].push({ key, ...sub });
@@ -784,26 +785,14 @@ function renderSub(s) {
   const sub = s.sustitutoNombre || s.sustituto || '—';
   const notes = s.notas || '';
   const isTodoDia = s.todoDia === true || s.todoDia === 'true';
+  const isAlwaysVisible = isNoSub || isTodoDia;
 
-  const tags = [];
-  if (grade) tags.push(`<span class="tag">${escapeHtml(grade)}</span>`);
-
-  const isExcursion = s.motivo && s.motivo.toLowerCase().includes('excursion');
-  const isNoSub = s.motivo === 'excursion_noSub';
-  const excursionChip = isExcursion
-    ? `<span class="excursion-chip">
-         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 20h16M4 20v-5l4-2 4 2 4-2 4 2v5M4 15V9l4-5h8l4 5v6"/></svg>
-         Excursión
-       </span>`
-    : '';
-
-  // Banner de aviso para excursiones de día completo que se muestran a todos
-  const todoDiaBanner = isTodoDia
+  // Banner: visible en todas las excursion_noSub (el grupo se queda en el centro)
+  const todoDiaBanner = isAlwaysVisible
     ? `<div style="background:#FEF9C3;border:1px solid #FCD34D;border-radius:6px;padding:5px 10px;font-size:11.5px;color:#854D0E;font-weight:600;margin-bottom:6px;">
-         ⚠️ Este docente está de excursión toda la mañana — su grupo permanece en el centro
+         ⚠️ Este docente está de excursión — su grupo permanece en el centro
        </div>`
     : '';
-
   let freshBadge = '';
   if (s.actualizado && typeof s.actualizado === 'number') {
     const minsAgo = Math.floor((Date.now() - s.actualizado) / 60000);
