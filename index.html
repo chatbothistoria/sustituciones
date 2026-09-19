@@ -685,10 +685,8 @@ function render() {
     const day = normalizeDay(sub.dia);
     if (!day) return;
     // Aplicar filtro de docente: solo incluye la sustitución si el docente
-    // elegido aparece como ausente o como sustituto.
-    // EXCEPCIÓN: las excursion_noSub se muestran siempre a todos — el grupo
-    // se queda en el centro y todos los docentes deben saberlo.
-    if (activeFilter && sub.motivo !== 'excursion_noSub') {
+    // elegido aparece como ausente o como sustituto
+    if (activeFilter) {
       if (sub.ausenteId !== activeFilter && sub.sustitutoId !== activeFilter) return;
     }
     byDay[day].push({ key, ...sub });
@@ -707,13 +705,15 @@ function render() {
 function renderContent(byDay) {
   const root = document.getElementById('content');
 
-  // Si hay filtro activo, mostramos solo los días con sustituciones
-  // para ese docente. Si no hay filtro, mostramos los 5 días.
+  // Si hay filtro activo, mostramos los días con sustituciones para ese docente
+  // O con aviso del día (los avisos se muestran siempre a todos).
+  // Si no hay filtro, mostramos los 5 días.
   const daysToShow = activeFilter
-    ? DAYS.filter(d => byDay[d].length > 0)
+    ? DAYS.filter(d => byDay[d].length > 0 || (avisos[d] && avisos[d].trim()))
     : DAYS;
 
   // Caso especial: filtro activo pero el docente no aparece en ningún día
+  // y tampoco hay avisos en ningún día
   if (activeFilter && daysToShow.length === 0) {
     const filteredTeacherName = teachersById[activeFilter]
       ? teachersById[activeFilter].nombre
@@ -831,7 +831,6 @@ function renderSub(s) {
         <div class="sub-hour-label">${s.hora === 'R' ? '' : 'hora'}</div>
       </div>
       <div class="sub-body">
-        ${isNoSub && activeFilter && s.ausenteId !== activeFilter ? `<div style="background:#FEF9C3;border:1px solid #FCD34D;border-radius:6px;padding:5px 10px;font-size:11.5px;color:#854D0E;font-weight:600;margin-bottom:6px;">⚠️ Este docente está de excursión — su grupo permanece en el centro</div>` : ''}
         <div class="sub-head">
           ${subject ? `<span class="sub-subject">${escapeHtml(subject)}</span>` : ''}
           ${tags.join('')}
