@@ -686,8 +686,11 @@ function render() {
     const day = normalizeDay(sub.dia);
     if (!day) return;
     // Aplicar filtro de docente: solo incluye la sustitución si el docente
-    // elegido aparece como ausente o como sustituto
-    if (activeFilter) {
+    // elegido aparece como ausente o como sustituto.
+    // EXCEPCIÓN: las excursiones sin sustituto (excursion_noSub, incluidas las de
+    // todo el día) se muestran siempre a todos los docentes: el grupo se queda en el
+    // centro y nadie debe abandonar su aula sin saberlo.
+    if (activeFilter && sub.motivo !== 'excursion_noSub') {
       if (sub.ausenteId !== activeFilter && sub.sustitutoId !== activeFilter) return;
     }
     byDay[day].push({ key, ...sub });
@@ -832,6 +835,7 @@ function renderSub(s) {
         <div class="sub-hour-label">${s.hora === 'R' ? '' : 'hora'}</div>
       </div>
       <div class="sub-body">
+        ${isNoSub && activeFilter && s.ausenteId !== activeFilter ? `<div style="background:#FEF9C3;border:1px solid #FCD34D;border-radius:6px;padding:5px 10px;font-size:11.5px;color:#854D0E;font-weight:600;margin-bottom:6px;">⚠️ Este docente está de excursión — su grupo permanece en el centro</div>` : ''}
         <div class="sub-head">
           ${subject ? `<span class="sub-subject">${escapeHtml(subject)}</span>` : ''}
           ${tags.join('')}
